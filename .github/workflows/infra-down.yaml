@@ -1,0 +1,57 @@
+name: Infrastructure Down
+
+on:
+    workflow_dispatch:
+    workflow_call:
+
+env:
+    AWS_REGION: ap-southeast-1
+    TF_VERSION: 1.5.0
+
+jobs:
+    terraform-destroy:
+        name: Tear Down EKS Infrastructure
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
+
+            - name: Configure AWS Credentials
+              uses: aws-actions/configure-aws-credentials@v4
+              with:
+                  aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+                  aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+                  aws-region: ${{ env.AWS_REGION }}
+
+            - name: Setup Terraform
+              uses: hashicorp/setup-terraform@v3
+              with:
+                  terraform_version: ${{ env.TF_VERSION }}
+
+            - name: Terraform Init
+              working-directory: ./infra/environments/prod
+              run: terraform init
+
+            - name: Remove Helm Releases (if any)
+              continue-on-error: true
+              run: |
+                  aws eks update-kubeconfig \
+                    --name exploresg-prod-cluster \
+                    --region ${{ env.AWS_REGION }} || true
+
+                  helm uninstall aws-load-balancer-controller -n kube-system || true
+
+            - name: Terraform Destroy - EKS Only
+              working-directory: ./infra/environments/prod
+              run: |
+                  terraform destroy -auto-approve \
+                    -target=module.eks \
+                    -target=module.vpc.aws_nat_gateway.main
+
+            - name: Infrastructure Destroyed
+              run: |
+                  echo "✅ EKS Cluster destroyed"
+                  echo "✅ NAT Gateways removed"
+                  echo "💰 Hourly costs stopped"
+                  echo "📝 VPC remains for next deployment"
