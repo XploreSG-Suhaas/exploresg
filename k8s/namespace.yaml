@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: exploresg-prod
+  labels:
+    name: exploresg-prod
+    environment: production

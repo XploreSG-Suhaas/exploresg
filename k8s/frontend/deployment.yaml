@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: exploresg-frontend
+  namespace: exploresg-prod
+  labels:
+    app: exploresg-frontend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: exploresg-frontend
+  template:
+    metadata:
+      labels:
+        app: exploresg-frontend
+    spec:
+      containers:
+      - name: exploresg-frontend
+        image: sreerajrone/exploresg-frontend-service:latest
+        ports:
+        - containerPort: 3000
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "200m"
+        env:
+        - name: NODE_ENV
+          value: "production"
+        # Add more env vars as needed
+        # - name: NEXT_PUBLIC_API_URL
+        #   value: "http://backend-service-url"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: exploresg-frontend
+  namespace: exploresg-prod
+  labels:
+    app: exploresg-frontend
+spec:
+  type: LoadBalancer
+  ports:
+  - port: 80
+    targetPort: 3000
+    protocol: TCP
+  selector:
+    app: exploresg-frontend
