@@ -54,20 +54,20 @@ jobs:
                   terraform_version: ${{ env.TF_VERSION }}
 
             - name: 🔄 Terraform Init
-              working-directory: ./infra
+              working-directory: ./infra/environments/prod
               run: terraform init
 
             - name: 📋 Terraform Plan
-              working-directory: ./infra
+              working-directory: ./infra/environments/prod
               run: |
                   echo "📊 Planning infrastructure changes..."
                   terraform plan \
                     -target=module.eks \
-                    -target=aws_nat_gateway.main \
+                    -target=module.vpc.aws_nat_gateway.main \
                     -out=tfplan
 
             - name: 🚀 Terraform Apply
-              working-directory: ./infra
+              working-directory: ./infra/environments/prod
               run: |
                   echo "🏗️ Provisioning EKS cluster and NAT gateways..."
                   terraform apply -auto-approve tfplan
